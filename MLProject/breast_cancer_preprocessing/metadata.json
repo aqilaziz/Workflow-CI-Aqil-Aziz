@@ -1,8 +1,10 @@
 {
   "dataset": "breast_cancer",
+  "source": "scikit-learn load_breast_cancer",
+  "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html",
+  "original_source_url": "https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic",
+  "source_file": "breast_cancer_raw/breast_cancer_raw.csv",
   "rows_after_cleaning": 569,
-  "train_rows": 455,
-  "test_rows": 114,
   "features": [
     "mean radius",
     "mean texture",
@@ -35,5 +37,7 @@
     "worst symmetry",
     "worst fractal dimension"
   ],
-  "target": "diagnosis"
+  "target": "diagnosis",
+  "train_rows": 455,
+  "test_rows": 114
 }

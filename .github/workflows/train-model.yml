@@ -1,0 +1,29 @@
+name: Train Model with MLflow Project
+
+on:
+  push:
+    paths:
+      - "MLProject/**"
+      - ".github/workflows/train-model.yml"
+  workflow_dispatch:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MLProject
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run MLflow Project
+        run: mlflow run . --env-manager=local
+      - name: Upload MLflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-artifacts
+          path: MLProject/mlruns

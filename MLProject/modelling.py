@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import json
+import os
+from contextlib import nullcontext
 from pathlib import Path
 
-import joblib
 import mlflow
 import mlflow.sklearn
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 
 TARGET_COLUMN = "diagnosis"
@@ -29,10 +29,18 @@ def load_data() -> tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
 def main() -> dict:
     x_train, y_train, x_test, y_test = load_data()
     mlflow.set_tracking_uri(TRACKING_DIR.as_uri())
-    mlflow.set_experiment("breast_cancer_random_forest")
+    if not os.environ.get("MLFLOW_RUN_ID"):
+        mlflow.set_experiment("breast_cancer_random_forest")
     mlflow.sklearn.autolog(log_models=True)
 
-    with mlflow.start_run(run_name="baseline_random_forest_autolog") as run:
+    active_run = mlflow.active_run()
+    run_context = (
+        nullcontext(active_run)
+        if active_run
+        else mlflow.start_run(run_name="baseline_random_forest_autolog")
+    )
+
+    with run_context as run:
         model = RandomForestClassifier(
             n_estimators=160,
             max_depth=8,
@@ -40,21 +48,15 @@ def main() -> dict:
             class_weight="balanced",
         )
         model.fit(x_train, y_train)
-        predictions = model.predict(x_test)
-        metrics = {
-            "accuracy": accuracy_score(y_test, predictions),
-            "precision": precision_score(y_test, predictions),
-            "recall": recall_score(y_test, predictions),
-            "f1_score": f1_score(y_test, predictions),
-        }
-        mlflow.log_metrics(metrics)
-        joblib.dump(model, Path(__file__).resolve().parent / "model.pkl")
         summary = {
             "run_id": run.info.run_id,
             "tracking_uri": mlflow.get_tracking_uri(),
-            "metrics": metrics,
+            "experiment": "breast_cancer_random_forest",
+            "logging": "mlflow.sklearn.autolog",
         }
-        Path("run_summary.json").write_text(json.dumps(summary, indent=2))
+        (Path(__file__).resolve().parent / "run_summary.json").write_text(
+            json.dumps(summary, indent=2)
+        )
         return summary
 
 
