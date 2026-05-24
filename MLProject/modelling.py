@@ -5,6 +5,7 @@ import os
 from contextlib import nullcontext
 from pathlib import Path
 
+import joblib
 import mlflow
 import mlflow.sklearn
 import pandas as pd
@@ -31,7 +32,7 @@ def main() -> dict:
     mlflow.set_tracking_uri(TRACKING_DIR.as_uri())
     if not os.environ.get("MLFLOW_RUN_ID"):
         mlflow.set_experiment("breast_cancer_random_forest")
-    mlflow.sklearn.autolog(log_models=True)
+    mlflow.sklearn.autolog(log_models=True, silent=True)
 
     active_run = mlflow.active_run()
     run_context = (
@@ -48,11 +49,14 @@ def main() -> dict:
             class_weight="balanced",
         )
         model.fit(x_train, y_train)
+        validation_accuracy = float(model.score(x_test, y_test))
+        joblib.dump(model, Path(__file__).resolve().parent / "model.pkl")
         summary = {
             "run_id": run.info.run_id,
             "tracking_uri": mlflow.get_tracking_uri(),
             "experiment": "breast_cancer_random_forest",
             "logging": "mlflow.sklearn.autolog",
+            "validation_accuracy": validation_accuracy,
         }
         (Path(__file__).resolve().parent / "run_summary.json").write_text(
             json.dumps(summary, indent=2)
